@@ -29,6 +29,7 @@
   .field{display:flex; flex-direction:column; gap:6px}
   .label{font-size:14px; color:#000}
   .lines{border:1px solid var(--line); min-height:120px; padding:6px; border-radius:8px}
+  .lines-compact{min-height:48px; padding:4px 6px; display:flex; align-items:center}
   .hstack{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
   table{width:100%; border-collapse:collapse; table-layout:fixed}
   th, td{border:1px solid var(--line); padding:6px; vertical-align:top}
@@ -125,7 +126,7 @@
               <div class="left">
                 <div class="field">
                   <label class="label">Chambre</label>
-                  <div class="lines"><input id="chambre" type="text" class="cell-edit" aria-label="Chambre"/></div>
+                  <div class="lines lines-compact"><input id="chambre" type="text" class="cell-edit" aria-label="Chambre"/></div>
                 </div>
                 <div class="field" style="margin-top:8px">
                   <label class="label">Diagnostic :</label>
@@ -153,11 +154,11 @@
             <div class="hstack">
               <div class="field">
                 <label class="label">Admission :</label>
-                <div class="lines"><input id="admission" type="date" class="cell-edit" aria-label="Admission"/></div>
+                <div class="lines lines-compact"><input id="admission" type="date" class="cell-edit" aria-label="Admission"/></div>
               </div>
               <div class="field">
                 <label class="label">Congé :</label>
-                <div class="lines"><input id="conge" type="date" class="cell-edit" aria-label="Congé"/></div>
+                <div class="lines lines-compact"><input id="conge" type="date" class="cell-edit" aria-label="Congé"/></div>
               </div>
             </div>
 
