@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<title>Fiches – Sommaire & Dossiers (prototype)</title>
+<style>
+  :root { --line:#555; --muted:#767676; --accent:#111; }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background:#f5f5f5; color:#111; -webkit-text-size-adjust:100%; }
+  header{position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid #e5e5e5; padding:12px 16px; display:flex; gap:10px; align-items:center}
+  header h1{font-size:18px; margin:0}
+  nav{display:flex; gap:8px; margin-left:auto}
+  .tab{appearance:none; -webkit-appearance:none; border:1px solid #bbb; padding:12px 14px; border-radius:12px; background:white; cursor:pointer; touch-action:manipulation; min-height:44px}
+  .tab.active{background:#111; color:#fff; border-color:#111}
+  main{padding:16px; display:flex; justify-content:center}
+  .container{width:100%; max-width:1080px; display:flex; flex-direction:column; gap:14px}
+
+  button{appearance:none; -webkit-appearance:none; border:1px solid #bbb; padding:12px 14px; border-radius:12px; background:white; cursor:pointer; touch-action:manipulation; min-height:44px}
+  button:hover{border-color:#888}
+  .btn-primary{background:#111; color:#fff; border-color:#111}
+
+  .paper{ width:100%; background:white; border:1px solid #ddd; border-radius:12px; padding:14px; box-shadow:0 4px 18px rgba(0,0,0,.06); }
+  .frame{border:2px solid var(--line); padding:8px;}
+  .top-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px}
+  .field{display:flex; flex-direction:column; gap:6px}
+  .label{font-size:14px; color:#000}
+  .lines{border:1px solid var(--line); min-height:120px; padding:6px; border-radius:8px}
+  .hstack{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px}
+  table{width:100%; border-collapse:collapse; table-layout:fixed}
+  th, td{border:1px solid var(--line); padding:6px; vertical-align:top}
+  th{font-weight:600}
+  .subhead{display:grid; grid-template-columns:repeat(3,1fr); border-top:1px solid var(--line)}
+  .subhead span{border-left:1px solid var(--line); padding:2px 4px; text-align:center; font-size:12px}
+  .subhead span:first-child{border-left:none}
+  .small{font-size:12px; color:#000}
+  .md-col{width:70px}
+  .date-col{width:160px}
+  .remarks-col{width:38%}
+  .footer{font-weight:700; text-align:center; letter-spacing:.5px}
+  .foot-code{font-size:12px; color:#444}
+  input[type="text"], textarea, input[type="date"]{width:100%; border:none; outline:none; font:inherit; background:transparent}
+  input[type="date"]{padding:4px 0}
+  .lines textarea{min-height:118px; resize:vertical}
+  .cell-edit{width:100%; border:none; outline:none; font:inherit; background:transparent}
+  .toolbar{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .muted{color:#777; font-size:13px}
+
+  /* Sommaire */
+  .card{background:#fff; border:1px solid #e5e5e5; border-radius:12px; padding:12px}
+  .grid{display:grid; grid-template-columns:1fr auto auto auto; gap:10px; align-items:center}
+  .list{display:flex; flex-direction:column; gap:8px}
+  .chk{width:22px; height:22px}
+
+  /* Camera capture */
+  .capture{border:1px dashed #aaa; background:#fff; border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:6px; align-items:center; justify-content:center;}
+  .capture video{max-width:100%; border-radius:8px}
+  .capture img{max-width:100%; border-radius:8px; border:1px solid #ccc}
+  .cap-controls{display:flex; gap:8px; flex-wrap:wrap}
+
+  /* Timeline */
+  .timeline{border-left:3px solid var(--line); margin:16px 0; padding-left:14px;}
+  .tl-entry{margin-bottom:12px; position:relative}
+  .tl-entry::before{content:""; position:absolute; left:-10px; top:4px; width:12px; height:12px; border-radius:50%; background:#111}
+  .tl-date{font-size:12px; color:#555}
+  .tl-text{background:#f0f0f0; border-radius:8px; padding:8px 12px; margin-top:2px}
+
+  /* Impression */
+  @media print{
+    header, .no-print{display:none !important}
+    body{background:#fff}
+    @page{size:letter; margin:10mm}
+    .paper{box-shadow:none; border:none; border-radius:0; padding:10mm}
+  }
+  .batch{display:none}
+  body.batch-print .app, body.batch-print .sommaire{display:none}
+  body.batch-print .batch{display:block}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Fiches – Prototype</h1>
+    <span id="testStatus" class="muted no-print"></span>
+    <nav>
+      <button id="tabSommaire" class="tab active">Sommaire</button>
+      <button id="tabDossier" class="tab">Dossier</button>
+    </nav>
+  </header>
+  <main>
+    <div class="container">
+      <!-- SOMMAIRE -->
+      <section class="sommaire" id="sommaire">
+        <div class="toolbar no-print">
+          <button id="newDossier" class="btn-primary">Nouveau dossier</button>
+          <button id="exportPDF">Exporter la sélection en PDF</button>
+          <span class="muted" id="count"></span>
+        </div>
+        <div class="list" id="list"></div>
+      </section>
+
+      <!-- APPLICATION / DOSSIER -->
+      <section class="app" id="app" style="display:none">
+        <div class="toolbar no-print" style="justify-content:space-between">
+          <div style="display:flex; gap:8px; align-items:center">
+            <label>Nom du dossier :</label>
+            <input id="dossierName" type="text" placeholder="ex. Patient – Chambre 123" style="min-width:280px; border:1px solid #ccc; border-radius:8px; padding:10px 12px" />
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap">
+            <button id="save">Enregistrer</button>
+            <button id="addRow">Ajouter une ligne</button>
+            <button id="clearRows">Vider lignes</button>
+            <button id="addNote">Ajouter une note</button>
+            <button id="imprimer">Imprimer ce dossier</button>
+            <button id="backSommaire" class="btn-primary">Retour sommaire</button>
+          </div>
+        </div>
+
+        <section class="paper" id="fiche">
+          <div class="frame">
+            <!-- Champs principaux -->
+            <div class="top-grid">
+              <div class="left">
+                <div class="field">
+                  <label class="label">Chambre</label>
+                  <div class="lines"><input id="chambre" type="text" class="cell-edit" aria-label="Chambre"/></div>
+                </div>
+                <div class="field" style="margin-top:8px">
+                  <label class="label">Diagnostic :</label>
+                  <div class="lines"><textarea id="diagnostic" aria-label="Diagnostic"></textarea></div>
+                </div>
+              </div>
+              <!-- Encadré capture étiquette patient -->
+              <div class="right">
+                <div class="capture">
+                  <div class="small">Étiquette / RAMQ – caméra ou fichier</div>
+                  <video id="capVideo" playsinline muted></video>
+                  <img id="capImage" alt="Prévisualisation" style="display:none"/>
+                  <canvas id="capCanvas" style="display:none"></canvas>
+                  <div class="cap-controls no-print">
+                    <button id="startCam">Démarrer</button>
+                    <button id="snap">Capturer</button>
+                    <button id="stopCam">Arrêter</button>
+                    <label class="btn" for="fileUp" style="border:1px solid #bbb; padding:12px 14px; border-radius:12px; cursor:pointer; min-height:44px">Importer</label>
+                    <input id="fileUp" type="file" accept="image/*" capture="environment" style="display:none"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="hstack">
+              <div class="field">
+                <label class="label">Admission :</label>
+                <div class="lines"><input id="admission" type="date" class="cell-edit" aria-label="Admission"/></div>
+              </div>
+              <div class="field">
+                <label class="label">Congé :</label>
+                <div class="lines"><input id="conge" type="date" class="cell-edit" aria-label="Congé"/></div>
+              </div>
+            </div>
+
+            <!-- Tableau principal -->
+            <div style="margin-top:8px">
+              <table id="tbl">
+                <colgroup>
+                  <col class="date-col"/>
+                  <col span="3" />
+                  <col span="3" />
+                  <col class="remarks-col"/>
+                  <col class="md-col"/>
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th colspan="3">G422‑H423‑P428
+                      <div class="subhead"><span>EO</span><span>EC</span><span>CM</span></div>
+                    </th>
+                    <th colspan="3">AMB
+                      <div class="subhead"><span>EO</span><span>EC</span><span>CM</span></div>
+                    </th>
+                    <th>Remarques / Acte</th>
+                    <th>MD</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="9">
+                      <div class="footer">CSSS HAUT‑RICHELIEU‑ROUVILLE</div>
+                      <div class="foot-code">30485</div>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Timeline notes -->
+            <h3 style="margin-top:20px">Notes (Timeline)</h3>
+            <div id="timeline" class="timeline"></div>
+          </div>
+        </section>
+      </section>
+
+      <!-- BATCH PRINT CONTAINER -->
+      <section class="batch" id="batch"></section>
+    </div>
+  </main>
+
+<script>
+(function(){
+  const KEY = 'fiches-dossiers-v4';
+  const $ = (id)=>document.getElementById(id);
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+  const state = { currentId:null, dossiers: load() };
+  let stream = null; // camera stream
+
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY))||[] }catch(e){ return [] } }
+  function saveAll(){ localStorage.setItem(KEY, JSON.stringify(state.dossiers)); renderList(); }
+
+  function uid(){ return 'd'+Math.random().toString(36).slice(2,9); }
+  function emptyRow(){ return {date:'', gEO:'', gEC:'', gCM:'', aEO:'', aEC:'', aCM:'', remarks:'', md:''}; }
+  function emptyDossier(){ return { id:uid(), name:'Nouveau dossier', chambre:'', diagnostic:'', admission:'', conge:'', rows:[...Array(6)].map(emptyRow), notes:[], labelImg:null }; }
+
+  // Tabs
+  const tabSom = $('tabSommaire'); const tabDos = $('tabDossier');
+  tabSom.onclick = ()=> showSommaire();
+  tabDos.onclick = ()=> { if(state.currentId){ showDossier() } };
+  function showSommaire(){ $('sommaire').style.display='block'; $('app').style.display='none'; tabSom.classList.add('active'); tabDos.classList.remove('active'); }
+  function showDossier(){ $('sommaire').style.display='none'; $('app').style.display='block'; tabDos.classList.add('active'); tabSom.classList.remove('active'); }
+
+  // Sommaire list
+  function renderList(){
+    const list = $('list'); list.innerHTML='';
+    const cnt = $('count'); cnt.textContent = state.dossiers.length? `${state.dossiers.length} dossier(s)` : 'Aucun dossier';
+    state.dossiers.forEach((d)=>{
+      const card = document.createElement('div'); card.className='card';
+      card.innerHTML = `<div class="grid"><div><div style="font-weight:600">${escapeHtml(d.name||'Sans nom')}</div><div class="muted small">Chambre: ${escapeHtml(d.chambre||'—')} · Adm.: ${escapeHtml(d.admission||'—')}</div></div><div><button data-open="${d.id}">Ouvrir</button></div><div><button data-del="${d.id}">Supprimer</button></div><div><input class="chk" type="checkbox" data-sel="${d.id}" /></div></div>`;
+      list.appendChild(card);
+    });
+  }
+
+  document.addEventListener('click', (e)=>{
+    const openId = e.target.getAttribute?.('data-open');
+    const delId = e.target.getAttribute?.('data-del');
+    if(openId){ open(openId); }
+    if(delId){ state.dossiers = state.dossiers.filter(x=>x.id!==delId); if(state.currentId===delId) state.currentId=null; saveAll(); showSommaire(); }
+  });
+
+  function open(id){ state.currentId = id; loadIntoForm(find(id)); showDossier(); }
+  function find(id){ return state.dossiers.find(x=>x.id===id); }
+  $('newDossier').onclick = ()=>{ const d = emptyDossier(); state.dossiers.unshift(d); saveAll(); open(d.id); };
+
+  // Date input support check (iPadOS fallback)
+  function dateSupported(){ const i=document.createElement('input'); i.setAttribute('type','date'); return i.type==='date'; }
+
+  // Table form
+  const tbody = $('tbody');
+  function clearRows(){ tbody.innerHTML=''; }
+  function newDateCell(value=''){
+    const td=document.createElement('td'); const inp=document.createElement('input');
+    inp.type = dateSupported()? 'date' : 'text';
+    if(!dateSupported()){ inp.placeholder='AAAA-MM-JJ'; inp.inputMode='numeric'; inp.pattern='\\d{4}-\\d{2}-\\d{2}'; }
+    inp.className='cell-edit'; if(value) inp.value=value; td.appendChild(inp); return [td, inp];
+  }
+  function newCell(value=''){ const td=document.createElement('td'); const inp=document.createElement('input'); inp.type='text'; inp.className='cell-edit'; inp.value=value||''; td.appendChild(inp); return [td, inp]; }
+  function newArea(value=''){ const td=document.createElement('td'); const ta=document.createElement('textarea'); ta.className='cell-edit'; ta.style.minHeight='40px'; ta.value=value||''; td.appendChild(ta); return [td, ta]; }
+  function addRowFromData(r){ const tr=document.createElement('tr');
+    tr.appendChild(newDateCell(r.date)[0]);
+    tr.appendChild(newCell(r.gEO)[0]);
+    tr.appendChild(newCell(r.gEC)[0]);
+    tr.appendChild(newCell(r.gCM)[0]);
+    tr.appendChild(newCell(r.aEO)[0]);
+    tr.appendChild(newCell(r.aEC)[0]);
+    tr.appendChild(newCell(r.aCM)[0]);
+    tr.appendChild(newArea(r.remarks)[0]);
+    tr.appendChild(newCell(r.md)[0]);
+    tbody.appendChild(tr);
+  }
+  function addEmptyRow(defaultToday=true){ const r=emptyRow(); if(defaultToday){ r.date = new Date().toISOString().slice(0,10); } addRowFromData(r); }
+
+  function loadIntoForm(d){
+    $('dossierName').value = d.name||'';
+    $('chambre').value = d.chambre||'';
+    $('diagnostic').value = d.diagnostic||'';
+    $('admission').value = d.admission||'';
+    $('conge').value = d.conge||'';
+    clearRows(); (d.rows&&d.rows.length? d.rows : [...Array(1)].map(emptyRow)).forEach(addRowFromData);
+    renderTimeline(d.notes||[]);
+    renderLabelImage(d.labelImg);
+  }
+
+  function collectFromForm(){
+    const rows = Array.from(tbody.querySelectorAll('tr')).map((tr)=>{
+      const cells = tr.querySelectorAll('input,textarea');
+      return {date:cells[0].value, gEO:cells[1].value, gEC:cells[2].value, gCM:cells[3].value, aEO:cells[4].value, aEC:cells[5].value, aCM:cells[6].value, remarks:cells[7].value, md:cells[8].value};
+    });
+    const d = find(state.currentId);
+    return { id: state.currentId, name:$('dossierName').value.trim()||'Sans nom', chambre:$('chambre').value, diagnostic:$('diagnostic').value, admission:$('admission').value, conge:$('conge').value, rows, notes:d? d.notes: [], labelImg: d? d.labelImg: null };
+  }
+
+  $('addRow').onclick = ()=>addEmptyRow(true);
+  $('clearRows').onclick = ()=>{ clearRows(); };
+  $('save').onclick = ()=>{ const d = collectFromForm(); const i = state.dossiers.findIndex(x=>x.id===d.id); if(i>-1) state.dossiers[i] = d; saveAll(); alert('Dossier enregistré.'); };
+  $('backSommaire').onclick = showSommaire;
+  $('imprimer').onclick = ()=>{ window.print(); };
+
+  // Notes timeline
+  $('addNote').onclick = ()=>{
+    const txt = prompt('Nouvelle note:');
+    if(!txt) return;
+    const d = find(state.currentId); if(!d) return;
+    (d.notes = d.notes||[]).push({ ts: Date.now(), text: txt });
+    saveAll(); renderTimeline(d.notes);
+  };
+  function renderTimeline(notes){
+    const c = $('timeline'); c.innerHTML='';
+    (notes||[]).sort((a,b)=>b.ts-a.ts).forEach(n=>{
+      const div = document.createElement('div'); div.className='tl-entry';
+      div.innerHTML = `<div class="tl-date">${fmtDate(n.ts)}</div><div class="tl-text">${escapeHtml(n.text)}</div>`;
+      c.appendChild(div);
+    });
+  }
+
+  // Camera capture handlers – iPadOS friendly with fallbacks
+  const video = $('capVideo'), canvas = $('capCanvas'), img=$('capImage');
+  $('startCam').onclick = async ()=>{
+    if(!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia){
+      alert("Caméra non supportée par ce navigateur. Utilisez 'Importer'."); return;
+    }
+    try{
+      const ideal = { video:{ facingMode:{ideal:'environment'} }, audio:false };
+      const basic = { video:true, audio:false };
+      stream = await navigator.mediaDevices.getUserMedia(ideal).catch(()=>navigator.mediaDevices.getUserMedia(basic));
+      video.srcObject = stream; await video.play();
+      video.style.display='block'; img.style.display='none';
+    }catch(e){ alert('Caméra non disponible: '+e.message+ (location.protocol!=='https:'? '\
+\nAstuce: iPadOS exige HTTPS pour la caméra.': '')); }
+  };
+  $('stopCam').onclick = ()=>{ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; video.removeAttribute('srcObject'); } };
+  $('snap').onclick = ()=>{
+    if(!video.srcObject){ alert('Démarre la caméra.'); return; }
+    const w = video.videoWidth || 1280, h = video.videoHeight || 720; canvas.width=w; canvas.height=h; const ctx=canvas.getContext('2d'); ctx.drawImage(video,0,0,w,h); const data=canvas.toDataURL('image/png');
+    setLabelImage(data);
+  };
+  $('fileUp').addEventListener('change', (e)=>{
+    const f=e.target.files?.[0]; if(!f) return; const r=new FileReader(); r.onload=()=> setLabelImage(r.result); r.readAsDataURL(f);
+  });
+  function setLabelImage(data){
+    const d=find(state.currentId); if(!d) return; d.labelImg=data; saveAll(); renderLabelImage(data);
+  }
+  function renderLabelImage(data){
+    if(data){ img.src=data; img.style.display='block'; video.style.display='none'; } else { img.removeAttribute('src'); img.style.display='none'; }
+  }
+  // iPadOS: stop camera when leaving page/app
+  window.addEventListener('pagehide', ()=>{ if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } });
+
+  // Export selection to PDF (batch print)
+  $('exportPDF').onclick = ()=>{
+    const ids = Array.from(document.querySelectorAll('[data-sel]')).filter(x=>x.checked).map(x=>x.getAttribute('data-sel'));
+    if(!ids.length){ alert('Sélectionnez au moins un dossier.'); return; }
+    const batch = $('batch'); batch.innerHTML='';
+    ids.map(find).forEach((d)=>{ const s=document.createElement('section'); s.className='paper'; s.style.pageBreakAfter='always'; s.innerHTML=templateFilled(d); batch.appendChild(s); });
+    document.body.classList.add('batch-print');
+    setTimeout(()=>{ window.print(); setTimeout(()=>{ document.body.classList.remove('batch-print'); batch.innerHTML=''; }, 300); }, 80);
+  };
+
+  function templateFilled(d){
+    const rows = (d.rows||[]).map(r=>`<tr>
+      <td>${esc(r.date)}</td>
+      <td>${esc(r.gEO)}</td><td>${esc(r.gEC)}</td><td>${esc(r.gCM)}</td>
+      <td>${esc(r.aEO)}</td><td>${esc(r.aEC)}</td><td>${esc(r.aCM)}</td>
+      <td>${esc(r.remarks)}</td>
+      <td>${esc(r.md)}</td>
+    </tr>`).join('');
+    const notes = (d.notes||[]).sort((a,b)=>b.ts-a.ts).map(n=>`<div class="tl-entry"><div class="tl-date">${fmtDate(n.ts)}</div><div class="tl-text">${esc(n.text)}</div></div>`).join('');
+    const label = d.labelImg? `<img src="${d.labelImg}" style="max-width:100%; border:1px solid #ccc; border-radius:8px"/>` : `<div style="height:160px"></div>`;
+
+    return `
+    <div class="frame">
+      <div class="top-grid">
+        <div class="left">
+          <div class="field">
+            <div class="label">Chambre</div>
+            <div class="lines"><div>${esc(d.chambre)}</div></div>
+          </div>
+          <div class="field" style="margin-top:8px">
+            <div class="label">Diagnostic :</div>
+            <div class="lines"><div>${escMultiline(d.diagnostic)}</div></div>
+          </div>
+        </div>
+        <div class="right"><div class="capture">${label}</div></div>
+      </div>
+      <div class="hstack">
+        <div class="field">
+          <div class="label">Admission :</div>
+          <div class="lines"><div>${esc(d.admission)}</div></div>
+        </div>
+        <div class="field">
+          <div class="label">Congé :</div>
+          <div class="lines"><div>${esc(d.conge)}</div></div>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <table>
+          <colgroup>
+            <col class="date-col"/>
+            <col span="3" />
+            <col span="3" />
+            <col class="remarks-col"/>
+            <col class="md-col"/>
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th colspan="3">G422‑H423‑P428
+                <div class="subhead"><span>EO</span><span>EC</span><span>CM</span></div>
+              </th>
+              <th colspan="3">AMB
+                <div class="subhead"><span>EO</span><span>EC</span><span>CM</span></div>
+              </th>
+              <th>Remarques / Acte</th>
+              <th>MD</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><td colspan="9"><div class="footer">CSSS HAUT‑RICHELIEU‑ROUVILLE</div><div class="foot-code">30485</div></td></tr></tfoot>
+        </table>
+      </div>
+      <div style="margin-top:10px">
+        <div class="label">Notes (timeline)</div>
+        <div class="timeline">${notes || '<div class="tl-entry"><div class="tl-text">Aucune note</div></div>'}</div>
+      </div>
+    </div>`;
+  }
+
+  function esc(s){ return escapeHtml(String(s||'')); }
+  function escMultiline(s){ return esc(s).replace(/\n/g,'<br/>'); }
+  function escapeHtml(str){ return str.replace(/[&<>"']/g, (ch)=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch])); }
+  function fmtDate(ts){ const d=new Date(ts); const p=(x)=>String(x).padStart(2,'0'); return `${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+
+  // ---- Tests rapides ----
+  (function runTests(){
+    const out = [];
+    function t(name, fn){ try{ fn(); out.push('✓ '+name); } catch(e){ out.push('✗ '+name+' → '+e.message); } }
+    function eq(a,b){ if(a!==b) throw new Error(`expected "${b}" got "${a}"`); }
+
+    t('escapeHtml() escapes < and &', ()=>{ eq(escapeHtml('<b>&'), '&lt;b&gt;&amp;'); });
+    t('escMultiline() converts \n to <br/>', ()=>{ eq(escMultiline('a\nb'), 'a<br/>b'); });
+    t('date input supported or fallback applied', ()=>{ const i=document.createElement('input'); i.type='date'; if(i.type!=='date'){ i.type='text'; i.placeholder='AAAA-MM-JJ'; } if(!(i.type==='date'||i.type==='text')) throw new Error('no date or text'); });
+    console.log('TESTS SUMMARY'); out.forEach(s=>console.log(s));
+    const el = document.getElementById('testStatus'); if(el) el.textContent = out.every(s=>s.startsWith('✓'))? 'Tests OK' : 'Tests en échec – voir console';
+  })();
+
+  // Init
+  renderList();
+  showSommaire();
+})();
+</script>
+</body>
+</html>
